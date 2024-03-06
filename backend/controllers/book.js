@@ -30,7 +30,6 @@ exports.getBestRating = (req, res, next) => {
 
 exports.createBook = (req, res, next) => {
     let bookObject = JSON.parse(req.body.book);
-    console.log(bookObject);
     //deleting ids
     delete bookObject._id;
     delete bookObject._userId;
@@ -39,16 +38,15 @@ exports.createBook = (req, res, next) => {
     const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+        imageUrl: `${req.protocol}://${req.get("host")}/images/resized_${req.file.filename}`,
     });
-    console.log(book);
     //saving book
     book.save()
         .then(() => {
             res.status(201).json({ message: "Objet enregistré !" });
         })
         .catch((error) => {
-            fs.unlinkSync(`images/${req.file.filename}`);
+            fs.unlinkSync(`images/resized_${req.file.filename}`);
             res.status(400).json({ error });
         });
 };
@@ -59,7 +57,7 @@ exports.modifyBook = (req, res, next) => {
     const bookObject = req.file
         ? {
               ...JSON.parse(req.body.book),
-              imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+              imageUrl: `${req.protocol}://${req.get("host")}/images/resized_${req.file.filename}`,
           }
         : { ...req.body };
 
@@ -69,6 +67,11 @@ exports.modifyBook = (req, res, next) => {
             if (book.userId != req.auth.userId) {
                 res.status(400).json({ message: "Non autorise" });
             } else {
+                const filename = book.imageUrl.split('/images/')[1];
+                req.file && fs.unlink(`images/${filename}`, (err => {
+                        if (err) console.log(err);
+                    })
+                );
                 Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
                     .then(() => res.status(200).json({ message: "object modified" }))
                     .catch((error) => res.status(401).json({ error }));
@@ -116,7 +119,6 @@ exports.postRating = (req, res, next) => {
         .then((book) => {
             if (book.ratings.find((p) => p.userId === req.auth.id)) {
                 res.status(400).json({ message: "Vous avez deja note ce livre" });
-                console.log("first");
             } else {
                 book.ratings.push(newRating),
                     (book.averageRating = (book.averageRating * (book.ratings.length - 1) + newRating.grade) / book.ratings.length),
