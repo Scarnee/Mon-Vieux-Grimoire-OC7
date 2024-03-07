@@ -9,6 +9,7 @@ const userRoutes = require("./routes/user");
 const rateLimit = require('express-rate-limit')
 const mongoSanitize = require("express-mongo-sanitize");
 const helmet = require("helmet");
+const env = require('dotenv').config()
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
@@ -24,7 +25,7 @@ const loginLimiter = rateLimit({
 });
 
 mongoose
-    .connect("mongodb+srv://JohnDoe:BR6yJ9u9yOkhlG9k@clustermonvieuxgrimoire.ianugsg.mongodb.net/?retryWrites=true&w=majority&appName=ClusterMonVieuxGrimoire", {
+    .connect(process.env.DB_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
@@ -43,12 +44,11 @@ app.use(
         replaceWith: "_",
     })
 );
-app.use(
+/*app.use(
     helmet({
         contentSecurityPolicy: false,
-        xDownloadOptions: false,
     })
-);
+);*/
 app.use("/api/books", bookRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api", limiter);

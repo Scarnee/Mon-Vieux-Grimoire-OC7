@@ -1,4 +1,4 @@
-const multer = require("multer");
+
 const sharp = require("sharp");
 path = require("path");
 fs = require("fs");
@@ -14,9 +14,10 @@ module.exports = (req, res, next) => {
     const outputFilePath = path.join("images", `resized_${fileName}`);
 
     sharp(filePath)
-        .resize( null, 508,{
-            fit:'contain'
-        } )
+
+        .resize(null, 570, {
+            fit: "cover",
+        })
         .toFile(outputFilePath)
         .then(() => {
             // Remplacer le fichier original par le fichier redimensionné
