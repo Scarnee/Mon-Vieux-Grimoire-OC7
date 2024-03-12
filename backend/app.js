@@ -20,8 +20,8 @@ const limiter = rateLimit({
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, //15minutes
-    limit: 5, //Limite a 5 demandes par fenetre, ici 15 minutes
-    message: "Vous avez atteint les 5 demandes par 15 minutes pour le login",
+    limit: 3, //Limite a 3 demandes par fenetre, ici 15 minutes
+    message: "Vous avez atteint les 3 demandes par 15 minutes pour le login",
 });
 
 mongoose
@@ -44,11 +44,11 @@ app.use(
         replaceWith: "_",
     })
 );
-/*app.use(
-    helmet({
-        contentSecurityPolicy: false,
+app.use(
+    helmet.contentSecurityPolicy({
+        crossOriginResourcePolicy: false,
     })
-);*/
+);
 app.use("/api/books", bookRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api", limiter);

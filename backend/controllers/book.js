@@ -3,7 +3,7 @@ const fs = require("fs");
 
 // Methode pour aller chercher tous les livres //
 
-exports.getAllBooks = (req, res, next) => {
+exports.getAllBooks = async (req, res, next) => {
     Book.find()
         .then((books) => res.status(200).json(books))
         .catch((error) => res.status(400).json({ error }));
@@ -11,16 +11,16 @@ exports.getAllBooks = (req, res, next) => {
 
 // Methode pour aller chercher un livre //
 
-exports.getOneBook = (req, res, next) => {
-    Book.findOne({ _id: req.params.id })
+exports.getOneBook = async (req, res, next) => {
+    await Book.findOne({ _id: req.params.id })
         .then((thing) => res.status(200).json(thing))
         .catch((error) => res.status(404).json({ error }));
 };
 
 //Methode pour afficher les 3 meilleurs livres par note moyenne
 
-exports.getBestRating = (req, res, next) => {
-    Book.find()
+exports.getBestRating = async (req, res, next) => {
+    await Book.find()
         .then((books) => books.sort((a, b) => b.averageRating - a.averageRating))
         .then((books) => res.status(200).json([books[0], books[1], books[2]]))
         .catch((error) => res.status(400).json({ error }));
@@ -28,7 +28,7 @@ exports.getBestRating = (req, res, next) => {
 
 // Methode pour ajouter un livre a la BDD
 
-exports.createBook = (req, res, next) => {
+exports.createBook = async (req, res, next) => {
     let bookObject = JSON.parse(req.body.book);
     //deleting ids
     delete bookObject._id;
@@ -41,7 +41,8 @@ exports.createBook = (req, res, next) => {
         imageUrl: `${req.protocol}://${req.get("host")}/images/resized_${req.file.filename}`,
     });
     //saving book
-    book.save()
+    await book
+        .save()
         .then(() => {
             res.status(201).json({ message: "Objet enregistré !" });
         })
@@ -53,7 +54,7 @@ exports.createBook = (req, res, next) => {
 
 // Methode pour modifier un livre //
 
-exports.modifyBook = (req, res, next) => {
+exports.modifyBook = async (req, res, next) => {
     const bookObject = req.file
         ? {
               ...JSON.parse(req.body.book),
@@ -62,16 +63,16 @@ exports.modifyBook = (req, res, next) => {
         : { ...req.body };
 
     delete bookObject.userId;
-    Book.findOne({ _id: req.params.id })
+    await Book.findOne({ _id: req.params.id })
         .then((book) => {
             if (book.userId != req.auth.userId) {
                 res.status(400).json({ message: "Non autorise" });
             } else {
-                const filename = book.imageUrl.split('/images/')[1];
-                req.file && fs.unlink(`images/${filename}`, (err => {
+                const filename = book.imageUrl.split("/images/")[1];
+                req.file &&
+                    fs.unlink(`images/${filename}`, (err) => {
                         if (err) console.log(err);
-                    })
-                );
+                    });
                 Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
                     .then(() => res.status(200).json({ message: "object modified" }))
                     .catch((error) => res.status(401).json({ error }));
@@ -82,8 +83,8 @@ exports.modifyBook = (req, res, next) => {
 
 // Methode pour supprimer l'element dans la BDD //
 
-exports.deleteBook = (req, res, next) => {
-    Book.findOne({ _id: req.params.id })
+exports.deleteBook = async (req, res, next) => {
+    await Book.findOne({ _id: req.params.id })
         .then((book) => {
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message: "Action non autorisée, veuillez vous connecter" });
@@ -105,7 +106,7 @@ exports.deleteBook = (req, res, next) => {
 
 // Methode pour noter livre
 
-exports.postRating = (req, res, next) => {
+exports.postRating = async (req, res, next) => {
     const newRating = {
         userId: req.auth.userId,
         grade: req.body.rating,
@@ -115,9 +116,9 @@ exports.postRating = (req, res, next) => {
         res.status(400).json({ message: "La note doit etre comprise entre 0 et 5" });
     }
 
-    Book.findOne({ _id: req.params.id })
+    await Book.findOne({ _id: req.params.id })
         .then((book) => {
-            if (book.ratings.find((p) => p.userId === req.auth.id)) {
+            if (book.ratings.find((p) => p.userId === req.body.userId)) {
                 res.status(400).json({ message: "Vous avez deja note ce livre" });
             } else {
                 book.ratings.push(newRating),

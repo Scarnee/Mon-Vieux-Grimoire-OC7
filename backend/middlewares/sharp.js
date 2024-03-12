@@ -1,4 +1,3 @@
-
 const sharp = require("sharp");
 path = require("path");
 fs = require("fs");
@@ -9,23 +8,20 @@ module.exports = (req, res, next) => {
         return next();
     }
 
-    const filePath = req.file.path;
-    const fileName = req.file.filename;
-    const outputFilePath = path.join("images", `resized_${fileName}`);
+    const extension = req.file.filename.split(".").pop();
+    const filename = req.file.filename.split(`.${extension}`)[0];
 
-    sharp(filePath)
-
-        .resize(null, 570, {
-            fit: "cover",
-        })
-        .toFile(outputFilePath)
-        .then(() => {
-            // Remplacer le fichier original par le fichier redimensionné
-            fs.unlink(filePath, () => {
-                req.file.path = outputFilePath;
-                next();
-            });
-        })
+    sharp(req.file.path)
+      .resize({ width: 500 })
+      .webp({ quality: 80 })
+      .toFile(`images/resized_${filename}.webp`)
+      .then(() => {
+        fs.unlink(`images/${req.file.filename}`, () => {
+          req.file.path = `images/${filename}.webp`;
+          req.file.filename = `${filename}.webp`;
+          next();
+        });
+      })
         .catch((err) => {
             console.log(err);
             return next();
